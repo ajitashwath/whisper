@@ -69,7 +69,9 @@ export function CreateSecretForm() {
       // Generate URL with the secret key in the hash
       const baseUrl = window.location.origin;
       const urlKey = values.usePassword ? messageId : `${messageId}#${encryptionKey}`;
-      const url = `${baseUrl}/secret/${urlKey}`;
+      
+      // Ensure proper URL format with trailing slash for static exports
+      const url = `${baseUrl}/secret/${urlKey}/`;
       
       setSecretUrl(url);
       
@@ -139,6 +141,7 @@ export function CreateSecretForm() {
     );
   }
 
+  // Rest of component remains unchanged
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
