@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import { Loader2 } from "lucide-react";
 import { PageContainer } from "@/components/page-container";
 import { ViewSecret } from "@/components/view-secret";
 import { cleanupExpiredMessages } from "@/lib/storage";
@@ -10,6 +11,7 @@ export function ViewSecretWrapper() {
   const params = useParams();
   const [id, setId] = useState<string>("");
   const [hash, setHash] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     // Clean up expired messages on page load
@@ -19,7 +21,9 @@ export function ViewSecretWrapper() {
     const urlId = params?.id as string;
     
     if (urlId) {
-      setId(urlId);
+      // Handle potential slash at the end of the URL
+      const cleanId = urlId.endsWith('/') ? urlId.slice(0, -1) : urlId;
+      setId(cleanId);
       
       // Check for hash fragment in URL
       if (typeof window !== "undefined") {
@@ -33,7 +37,27 @@ export function ViewSecretWrapper() {
         }
       }
     }
+    
+    setIsLoading(false);
   }, [params]);
+
+  if (isLoading) {
+    return (
+      <PageContainer>
+        <div className="max-w-3xl w-full text-center mb-8">
+          <h1 className="text-3xl font-bold tracking-tight mb-3">
+            Loading Secret...
+          </h1>
+          <p className="text-muted-foreground max-w-2xl mx-auto">
+            Please wait while we retrieve your secret message.
+          </p>
+        </div>
+        <div className="flex justify-center">
+          <Loader2 className="h-8 w-8 animate-spin" />
+        </div>
+      </PageContainer>
+    );
+  }
 
   return (
     <PageContainer>
