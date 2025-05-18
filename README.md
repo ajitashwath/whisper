@@ -1,2 +1,0 @@
-# whispers-secret-msgs
-
