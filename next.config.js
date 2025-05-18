@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'export',
+  trailingSlash: true,
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -13,6 +14,7 @@ const nextConfig = {
       },
     ],
   },
+  // Removed exportPathMap as it is not supported with the "app" directory.
 };
 
 module.exports = nextConfig;
