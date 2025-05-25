@@ -31,6 +31,7 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
   const [state, setState] = useState<"loading" | "password" | "notFound" | "decrypted" | "error">("loading");
   const [decryptedMessage, setDecryptedMessage] = useState<string>("");
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
+  const [encryptedContent, setEncryptedContent] = useState<string>("");
   const { toast } = useToast();
   const router = useRouter();
 
@@ -57,6 +58,9 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
       setState("notFound");
       return;
     }
+    
+    // Store encrypted content for password-protected messages
+    setEncryptedContent(message.encryptedContent);
     
     if (message.passwordProtected) {
       setIsPasswordProtected(true);
@@ -89,22 +93,14 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
       toast({
         variant: "destructive",
         title: "Decryption failed",
-        description: "The message couldn't be decrypted. It may have been tampered with.",
+        description: "The message couldn't be decrypted. The key may be invalid or the message has been tampered with.",
       });
     }
   };
 
   const onSubmitPassword = async (values: z.infer<typeof passwordSchema>) => {
     try {
-      // Retrieve the message again since it was destroyed in the first retrieval
-      const message = retrieveAndDestroySecret(id);
-      
-      if (!message) {
-        setState("notFound");
-        return;
-      }
-      
-      await decryptWithKey(message.encryptedContent, values.password);
+      await decryptWithKey(encryptedContent, values.password);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -168,7 +164,7 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
         <CardHeader className="text-center">
           <CardTitle className="flex items-center justify-center text-destructive">
             <ShieldAlert className="mr-2 h-6 w-6" />
-            Decryption Failed
+            Unable to Access Secret
           </CardTitle>
           <CardDescription>
             We couldn't decrypt this message.
@@ -177,7 +173,7 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
         <CardContent>
           <Alert variant="destructive">
             <ShieldAlert className="h-4 w-4" />
-            <AlertTitle>Unable to Access Secret</AlertTitle>
+            <AlertTitle>Decryption Failed</AlertTitle>
             <AlertDescription>
               The decryption key may be invalid or the message has been tampered with.
             </AlertDescription>
