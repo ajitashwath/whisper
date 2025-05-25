@@ -68,10 +68,15 @@ export function CreateSecretForm() {
       
       // Generate URL with the secret key in the hash
       const baseUrl = window.location.origin;
-      const urlKey = values.usePassword ? messageId : `${messageId}#${encryptionKey}`;
+      let url: string;
       
-      // Ensure proper URL format with trailing slash for static exports
-      const url = `${baseUrl}/secret/${urlKey}/`;
+      if (values.usePassword) {
+        // For password-protected messages, just use the ID
+        url = `${baseUrl}/secret/${messageId}`;
+      } else {
+        // For non-password-protected messages, include the key in the hash
+        url = `${baseUrl}/secret/${messageId}#${encryptionKey}`;
+      }
       
       setSecretUrl(url);
       
