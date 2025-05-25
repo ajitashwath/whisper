@@ -16,28 +16,40 @@ export function ViewSecretWrapper() {
   useEffect(() => {
     // Clean up expired messages on page load
     cleanupExpiredMessages();
-    
+
     // Extract ID from URL parameters
     const urlId = params?.id as string;
-    
+
     if (urlId) {
-      // Handle potential slash at the end of the URL
-      const cleanId = urlId.endsWith('/') ? urlId.slice(0, -1) : urlId;
+      // Handle the case where ID might contain hash fragment
+      let cleanId = urlId;
+      let hashFragment = "";
+
+      // Check if the ID contains a hash fragment
+      if (urlId.includes('#')) {
+        const parts = urlId.split('#');
+        cleanId = parts[0];
+        hashFragment = parts[1];
+      }
+
+      // Remove trailing slash if present
+      cleanId = cleanId.endsWith('/') ? cleanId.slice(0, -1) : cleanId;
+
       setId(cleanId);
-      
-      // Check for hash fragment in URL
-      if (typeof window !== "undefined") {
-        const hashFragment = window.location.hash.substring(1);
-        if (hashFragment) {
-          setHash(hashFragment);
-          
+
+      // Set hash from URL fragment or window location
+      if (hashFragment) {
+        setHash(hashFragment);
+      } else if (typeof window !== "undefined") {
+        const windowHash = window.location.hash.substring(1);
+        if (windowHash) {
+          setHash(windowHash);
           // Clear the hash from the URL for security
-          // (so it's not shared if someone copies the URL after viewing)
           window.history.replaceState({}, document.title, window.location.pathname);
         }
       }
     }
-    
+
     setIsLoading(false);
   }, [params]);
 
@@ -69,7 +81,7 @@ export function ViewSecretWrapper() {
           This message will self-destruct after you view it.
         </p>
       </div>
-      
+
       {id && <ViewSecret id={id} hash={hash} />}
     </PageContainer>
   );
