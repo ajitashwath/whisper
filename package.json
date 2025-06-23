@@ -71,6 +71,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@types/pg": "^8.15.4",
     "@types/uuid": "^9.0.8"
   }
 }
