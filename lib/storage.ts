@@ -7,6 +7,9 @@ export interface SecretMessage {
   createdAt: number;
   expiresAt: number;
   passwordProtected: boolean;
+  fileName?: string;
+  fileType?: string;
+  messageType?: "text" | "photo" | "document";
 }
 
 // Storage key in localStorage
@@ -18,7 +21,12 @@ const STORAGE_KEY = 'secret_messages';
 export const storeSecret = (
   encryptedContent: string,
   expiresIn: number,
-  passwordProtected: boolean = false
+  passwordProtected: boolean = false,
+  options?: {
+    fileName?: string;
+    fileType?: string;
+    messageType?: "text" | "photo" | "document";
+  }
 ): string => {
   try {
     // Generate a unique ID for the message
@@ -31,6 +39,7 @@ export const storeSecret = (
       createdAt: now,
       expiresAt: now + expiresIn,
       passwordProtected,
+      ...(options || {})
     };
 
     // Get existing messages

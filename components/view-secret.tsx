@@ -32,6 +32,7 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
   const [decryptedMessage, setDecryptedMessage] = useState<string>("");
   const [isPasswordProtected, setIsPasswordProtected] = useState(false);
   const [encryptedContent, setEncryptedContent] = useState<string>("");
+  const [fileInfo, setFileInfo] = useState<{ name: string; type: string; url: string } | null>(null);
   const { toast } = useToast();
   const router = useRouter();
 
@@ -70,7 +71,7 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
     
     // If not password protected, try to decrypt using the hash
     if (hash) {
-      decryptWithKey(message.encryptedContent, hash);
+      decryptWithKey(message.encryptedContent, hash, message);
     } else {
       // No hash and no password protection is an error
       setState("error");
@@ -82,10 +83,24 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
     }
   }, [id, hash]);
 
-  const decryptWithKey = async (encryptedContent: string, key: string) => {
+  const decryptWithKey = async (encryptedContent: string, key: string, messageMeta?: any) => {
     try {
       const message = await decryptMessage(encryptedContent, key);
-      setDecryptedMessage(message);
+      // If file secret, reconstruct file
+      if (messageMeta && (messageMeta.messageType === "photo" || messageMeta.messageType === "document")) {
+        // message is base64 string
+        const byteString = atob(message);
+        const byteArray = new Uint8Array(byteString.length);
+        for (let i = 0; i < byteString.length; i++) {
+          byteArray[i] = byteString.charCodeAt(i);
+        }
+        const blob = new Blob([byteArray], { type: messageMeta.fileType || 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        setFileInfo({ name: messageMeta.fileName || 'file', type: messageMeta.fileType || '', url });
+        setDecryptedMessage('');
+      } else {
+        setDecryptedMessage(message);
+      }
       setState("decrypted");
     } catch (error) {
       console.error("Decryption failed:", error);
@@ -100,7 +115,9 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
 
   const onSubmitPassword = async (values: z.infer<typeof passwordSchema>) => {
     try {
-      await decryptWithKey(encryptedContent, values.password);
+      // Need to retrieve message meta again
+      const messageMeta = retrieveAndDestroySecret(id);
+      await decryptWithKey(encryptedContent, values.password, messageMeta);
     } catch (error) {
       toast({
         variant: "destructive",
@@ -234,32 +251,51 @@ export function ViewSecret({ id, hash }: ViewSecretProps) {
     );
   }
 
-  return (
-    <Card className="w-full max-w-md mx-auto">
-      <CardHeader>
-        <CardTitle className="text-center flex items-center justify-center">
-          <ShieldCheck className="mr-2 h-6 w-6 text-green-500" />
-          Secret Revealed
-        </CardTitle>
-        <CardDescription className="text-center">
-          This message has been decrypted and will not be accessible again.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="p-4 bg-muted rounded-md">
-          <div className="whitespace-pre-wrap break-words">
-            {decryptedMessage}
-          </div>
-        </div>
-        <div className="flex justify-center">
-          <CopyButton value={decryptedMessage} className="w-full" />
-        </div>
-      </CardContent>
-      <CardFooter>
-        <Button onClick={goHome} className="w-full">
-          Create a New Secret
-        </Button>
-      </CardFooter>
-    </Card>
-  );
+  if (state === "decrypted") {
+    return (
+      <Card className="w-full max-w-md mx-auto">
+        <CardHeader>
+          <CardTitle className="text-center flex items-center justify-center">
+            <ShieldCheck className="mr-2 h-6 w-6 text-green-500" />
+            Secret Revealed
+          </CardTitle>
+          <CardDescription className="text-center">
+            This message has been decrypted and will not be accessible again.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {fileInfo ? (
+            fileInfo.type.startsWith('image/') ? (
+              <div className="flex flex-col items-center">
+                <img src={fileInfo.url} alt={fileInfo.name} className="max-w-full max-h-64 rounded border" />
+                <a href={fileInfo.url} download={fileInfo.name} className="mt-2 underline text-primary text-sm">Download Image</a>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center">
+                <a href={fileInfo.url} download={fileInfo.name} className="underline text-primary text-sm">Download {fileInfo.name}</a>
+              </div>
+            )
+          ) : (
+            <div className="p-4 bg-muted rounded-md">
+              <div className="whitespace-pre-wrap break-words">
+                {decryptedMessage}
+              </div>
+            </div>
+          )}
+          {fileInfo ? null : (
+            <div className="flex justify-center">
+              <CopyButton value={decryptedMessage} className="w-full" />
+            </div>
+          )}
+        </CardContent>
+        <CardFooter>
+          <Button onClick={goHome} className="w-full">
+            Create a New Secret
+          </Button>
+        </CardFooter>
+      </Card>
+    );
+  }
+
+  return null;
 }

@@ -95,7 +95,8 @@ export function CreateSecretForm() {
         messageId = storeSecret(
           encryptedMessage,
           Number(values.expiration),
-          values.usePassword
+          values.usePassword,
+          { messageType: values.messageType }
         );
       } else if (values.file instanceof File) {
         const arrayBuffer = await values.file.arrayBuffer();
@@ -109,7 +110,12 @@ export function CreateSecretForm() {
         messageId = storeSecret(
           encryptedMessage,
           Number(values.expiration),
-          values.usePassword
+          values.usePassword,
+          {
+            fileName: values.file.name,
+            fileType: values.file.type,
+            messageType: values.messageType,
+          }
         );
       } else {
         throw new Error("No valid input");

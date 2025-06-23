@@ -10,6 +10,27 @@ export const generateKey = (): string => {
   return Array.from(array, (byte) => byte.toString(16).padStart(2, "0")).join("");
 };
 
+// Helper: Uint8Array to base64
+export function uint8ToBase64(u8: Uint8Array): string {
+  let binary = '';
+  const len = u8.byteLength;
+  for (let i = 0; i < len; i++) {
+    binary += String.fromCharCode(u8[i]);
+  }
+  return btoa(binary);
+}
+
+// Helper: base64 to Uint8Array
+export function base64ToUint8(base64: string): Uint8Array {
+  const binary = atob(base64);
+  const len = binary.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes;
+}
+
 /**
  * Encrypts text using a provided key
  */
@@ -64,7 +85,7 @@ export const encryptMessage = async (text: string, key: string): Promise<string>
     result.set(new Uint8Array(encryptedData), salt.length + iv.length);
     
     // Convert to Base64 for URL-safe storage
-    return btoa(String.fromCharCode(...Array.from(result)));
+    return uint8ToBase64(result);
   } catch (error) {
     console.error("Encryption error:", error);
     throw new Error("Failed to encrypt message");
@@ -77,12 +98,7 @@ export const encryptMessage = async (text: string, key: string): Promise<string>
 export const decryptMessage = async (encrypted: string, key: string): Promise<string> => {
   try {
     // Convert from Base64
-    const data = new Uint8Array(
-      atob(encrypted)
-        .split("")
-        .map((char) => char.charCodeAt(0))
-    );
-    
+    const data = base64ToUint8(encrypted);
     const encodedKey = new TextEncoder().encode(key);
     
     // Extract salt, IV, and encrypted data
